@@ -41,11 +41,13 @@ namespace tao
             {
             }
 
-            void string( const std::string& ) noexcept
+            template< typename String >
+            void string( const String& ) noexcept
             {
             }
 
-            void binary( const std::vector< byte >& ) noexcept
+            template< typename Binary >
+            void binary( const Binary& ) noexcept
             {
             }
 
@@ -65,7 +67,8 @@ namespace tao
             {
             }
 
-            void key( const std::string& ) noexcept
+            template< typename String >
+            void key( const String& ) noexcept
             {
             }
 

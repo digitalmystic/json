@@ -17,9 +17,14 @@ namespace tao
    {
       namespace internal
       {
-         template< typename Value >
+         template< typename Value, template< typename ... > class Allocator = std::allocator >
          union value_union
          {
+            using string_t = std::basic_string< char, std::char_traits< char >, Allocator< char > >;
+            using binary_t = std::vector< byte, Allocator< byte > >;
+            using array_t = std::vector< Value, Allocator< Value > >;
+            using object_t = std::map< string_t, Value, std::less< string_t >, Allocator< std::pair< const string_t, Value > > >;
+
             value_union()
             {
             }
@@ -36,10 +41,10 @@ namespace tao
             std::uint64_t u;
             double d;
 
-            std::string s;
-            std::vector< json::byte > x;
-            std::vector< Value > a;
-            std::map< std::string, Value > o;
+            string_t s;
+            binary_t x;
+            array_t a;
+            object_t o;
 
             const Value* p;
          };

@@ -24,7 +24,8 @@ namespace tao
 
          // Utility functions for the unescape actions.
 
-         inline bool utf8_append_utf32( std::string& string, const unsigned utf32 )
+         template< typename String >
+         inline bool utf8_append_utf32( String& string, const unsigned utf32 )
          {
             if( utf32 <= 0x7f ) {
                string += char( utf32 & 0xff );

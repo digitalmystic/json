@@ -8,13 +8,12 @@
 #include <type_traits>
 #include <utility>
 
+#include "fwd.hpp"
+
 namespace tao
 {
    namespace json
    {
-      template< template< typename... > class >
-      class basic_value;
-
       template< template< typename... > class Traits >
       struct pair
       {

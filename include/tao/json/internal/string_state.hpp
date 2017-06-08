@@ -13,11 +13,19 @@ namespace tao
    {
       namespace internal
       {
+         template< typename String = std::string >
          struct string_state
          {
             string_state() = default;
             string_state( const string_state& ) = delete;
             void operator=( const string_state& ) = delete;
+
+            template< typename Allocator >
+            explicit
+            string_state( Allocator& alloc )
+               : unescaped( typename String::allocator_type( alloc ) )
+            {
+            }
 
             template< typename Consumer >
             void success( Consumer& consumer )
@@ -25,7 +33,7 @@ namespace tao
                consumer.string( std::move( unescaped ) );
             }
 
-            std::string unescaped;
+            String unescaped;
          };
 
       }  // namespace internal

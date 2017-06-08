@@ -26,8 +26,8 @@ namespace tao
          template<>
          struct action< rules::null >
          {
-            template< typename Consumer >
-            static void apply0( Consumer& consumer )
+            template< typename Consumer, typename... Ts >
+            static void apply0( Consumer& consumer, Ts&&... )
             {
                consumer.null();
             }
@@ -36,8 +36,8 @@ namespace tao
          template<>
          struct action< rules::true_ >
          {
-            template< typename Consumer >
-            static void apply0( Consumer& consumer )
+            template< typename Consumer, typename... Ts >
+            static void apply0( Consumer& consumer, Ts&&... )
             {
                consumer.boolean( true );
             }
@@ -46,8 +46,8 @@ namespace tao
          template<>
          struct action< rules::false_ >
          {
-            template< typename Consumer >
-            static void apply0( Consumer& consumer )
+            template< typename Consumer, typename... Ts >
+            static void apply0( Consumer& consumer, Ts&&... )
             {
                consumer.boolean( false );
             }
@@ -56,8 +56,8 @@ namespace tao
          template<>
          struct action< rules::array::begin >
          {
-            template< typename Consumer >
-            static void apply0( Consumer& consumer )
+            template< typename Consumer, typename... Ts >
+            static void apply0( Consumer& consumer, Ts&&... )
             {
                consumer.begin_array();
             }
@@ -66,8 +66,8 @@ namespace tao
          template<>
          struct action< rules::array::element >
          {
-            template< typename Consumer >
-            static void apply0( Consumer& consumer )
+            template< typename Consumer, typename... Ts >
+            static void apply0( Consumer& consumer, Ts&&... )
             {
                consumer.element();
             }
@@ -76,8 +76,8 @@ namespace tao
          template<>
          struct action< rules::array::end >
          {
-            template< typename Consumer >
-            static void apply0( Consumer& consumer )
+            template< typename Consumer, typename... Ts>
+            static void apply0( Consumer& consumer, Ts&&... )
             {
                consumer.end_array();
             }
@@ -86,8 +86,8 @@ namespace tao
          template<>
          struct action< rules::object::begin >
          {
-            template< typename Consumer >
-            static void apply0( Consumer& consumer )
+            template< typename Consumer, typename... Ts >
+            static void apply0( Consumer& consumer, Ts&&... )
             {
                consumer.begin_object();
             }
@@ -96,8 +96,8 @@ namespace tao
          template<>
          struct action< rules::object::element >
          {
-            template< typename Consumer >
-            static void apply0( Consumer& consumer )
+            template< typename Consumer, typename... Ts >
+            static void apply0( Consumer& consumer, Ts&&... )
             {
                consumer.member();
             }
@@ -106,8 +106,8 @@ namespace tao
          template<>
          struct action< rules::object::end >
          {
-            template< typename Consumer >
-            static void apply0( Consumer& consumer )
+            template< typename Consumer, typename... Ts >
+            static void apply0( Consumer& consumer, Ts&&... )
             {
                consumer.end_object();
             }

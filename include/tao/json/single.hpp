@@ -6,15 +6,13 @@
 
 #include <utility>
 
+#include "fwd.hpp"
 #include "pair.hpp"
 
 namespace tao
 {
    namespace json
    {
-      template< template< typename... > class >
-      class basic_value;
-
       template< template< typename... > class Traits >
       struct single
       {

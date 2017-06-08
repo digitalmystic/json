@@ -8,15 +8,13 @@
 #include <string>
 #include <vector>
 
+#include "fwd.hpp"
 #include "type.hpp"
 
 namespace tao
 {
    namespace json
    {
-      template< template< typename... > class Traits >
-      class basic_value;
-
       // note: traits< ... >::assign() is always called with needs_discard(v) == false
 
       template< typename T, typename = void >

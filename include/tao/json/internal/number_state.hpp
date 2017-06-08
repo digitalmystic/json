@@ -42,8 +42,8 @@ namespace tao
             bool infinity = false;
             char mantissa[ max_mantissa_digits + 1 ];
 
-            template< typename Consumer >
-            void success( Consumer& consumer )
+            template< typename Consumer, typename... Ts >
+            void success( Consumer& consumer, Ts&&... )
             {
                if( !isfp && msize <= 20 ) {
                   mantissa[ msize ] = 0;

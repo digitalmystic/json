@@ -28,6 +28,8 @@ namespace tao
 {
    namespace json
    {
+      struct allocator_tag {};
+
       namespace internal
       {
          template< typename, typename, typename = void >
@@ -48,7 +50,7 @@ namespace tao
 
       }  // namespace internal
 
-      template< template< typename... > class Traits >
+      template< template< typename... > class Traits, template< typename... > class Allocator >
       class basic_value
          : operators::totally_ordered< basic_value< Traits > >,
            internal::totally_ordered< basic_value< Traits >, null_t, type::NULL_ >,
@@ -77,29 +79,40 @@ namespace tao
            internal::totally_ordered< basic_value< Traits >, std::nullptr_t, type::RAW_PTR >
       {
       public:
-         using binary_t = std::vector< byte >;
-         using array_t = std::vector< basic_value >;
-         using object_t = std::map< std::string, basic_value >;
+         using union_t = internal::value_union< basic_value, Allocator >;
+         using string_t = typename union_t::string_t;
+         using binary_t = typename union_t::binary_t;
+         using array_t = typename union_t::array_t;
+         using object_t = typename union_t::object_t;
 
          basic_value() noexcept
          {
          }
 
+         template< typename... Ts >
+         basic_value( const allocator_tag, Ts&&... ts )
+            : m_alloc( std::forward< Ts >( ts )... )
+         {
+         }
+
          basic_value( basic_value&& r ) noexcept
-            : m_type( r.m_type )
+            : m_type( r.m_type ),
+              m_alloc( r.m_alloc )
          {
             seize( std::move( r ) );
          }
 
          // required work-around for a bug in older GCCs (<4.9)
          basic_value( const basic_value&& r )
-            : m_type( r.m_type )
+            : m_type( r.m_type ),
+              m_alloc( r.m_alloc )
          {
             embed( r );
          }
 
          basic_value( const basic_value& r )
-            : m_type( r.m_type )
+            : m_type( r.m_type ),
+              m_alloc( r.m_alloc )
          {
             embed( r );
          }
@@ -277,13 +290,13 @@ namespace tao
             return unsafe_get_double();
          }
 
-         std::string& get_string()
+         string_t& get_string()
          {
             TAOCPP_JSON_CHECK_TYPE_ERROR( m_type, json::type::STRING );
             return unsafe_get_string();
          }
 
-         const std::string& get_string() const
+         const string_t& get_string() const
          {
             TAOCPP_JSON_CHECK_TYPE_ERROR( m_type, json::type::STRING );
             return unsafe_get_string();
@@ -332,14 +345,14 @@ namespace tao
          }
 
          template< json::type E >
-         decltype( internal::get_by_enum< E >::get( std::declval< internal::value_union< basic_value >& >() ) ) get()
+         decltype( internal::get_by_enum< E >::get( std::declval< union_t& >() ) ) get()
          {
             TAOCPP_JSON_CHECK_TYPE_ERROR( m_type, E );
             return internal::get_by_enum< E >::get( m_union );
          }
 
          template< json::type E >
-         decltype( internal::get_by_enum< E >::get( std::declval< const internal::value_union< basic_value >& >() ) ) get() const
+         decltype( internal::get_by_enum< E >::get( std::declval< const union_t& >() ) ) get() const
          {
             TAOCPP_JSON_CHECK_TYPE_ERROR( m_type, E );
             return internal::get_by_enum< E >::get( m_union );
@@ -400,12 +413,12 @@ namespace tao
             return m_union.d;
          }
 
-         std::string& unsafe_get_string() noexcept
+         string_t& unsafe_get_string() noexcept
          {
             return m_union.s;
          }
 
-         const std::string& unsafe_get_string() const noexcept
+         const string_t& unsafe_get_string() const noexcept
          {
             return m_union.s;
          }
@@ -446,13 +459,13 @@ namespace tao
          }
 
          template< json::type E >
-         decltype( internal::get_by_enum< E >::get( std::declval< internal::value_union< basic_value >& >() ) ) unsafe_get()
+         decltype( internal::get_by_enum< E >::get( std::declval< union_t& >() ) ) unsafe_get()
          {
             return internal::get_by_enum< E >::get( m_union );
          }
 
          template< json::type E >
-         decltype( internal::get_by_enum< E >::get( std::declval< const internal::value_union< basic_value >& >() ) ) unsafe_get() const
+         decltype( internal::get_by_enum< E >::get( std::declval< const union_t& >() ) ) unsafe_get() const
          {
             return internal::get_by_enum< E >::get( m_union );
          }
@@ -466,25 +479,25 @@ namespace tao
             return p;
          }
 
-         basic_value* unsafe_find( const std::string& key ) noexcept
+         basic_value* unsafe_find( const string_t& key ) noexcept
          {
             const auto it = m_union.o.find( key );
             return ( it != m_union.o.end() ) ? ( &it->second ) : nullptr;
          }
 
-         const basic_value* unsafe_find( const std::string& key ) const noexcept
+         const basic_value* unsafe_find( const string_t& key ) const noexcept
          {
             const auto it = m_union.o.find( key );
             return ( it != m_union.o.end() ) ? ( &it->second ) : nullptr;
          }
 
-         basic_value* find( const std::string& key )
+         basic_value* find( const string_t& key )
          {
             TAOCPP_JSON_CHECK_TYPE_ERROR( m_type, json::type::OBJECT );
             return unsafe_find( key );
          }
 
-         const basic_value* find( const std::string& key ) const
+         const basic_value* find( const string_t& key ) const
          {
             TAOCPP_JSON_CHECK_TYPE_ERROR( m_type, json::type::OBJECT );
             return unsafe_find( key );
@@ -502,13 +515,13 @@ namespace tao
             return m_union.a.at( index );
          }
 
-         basic_value& at( const std::string& key )
+         basic_value& at( const string_t& key )
          {
             TAOCPP_JSON_CHECK_TYPE_ERROR( m_type, json::type::OBJECT );
             return m_union.o.at( key );
          }
 
-         const basic_value& at( const std::string& key ) const
+         const basic_value& at( const string_t& key ) const
          {
             TAOCPP_JSON_CHECK_TYPE_ERROR( m_type, json::type::OBJECT );
             return m_union.o.at( key );
@@ -534,12 +547,12 @@ namespace tao
             return m_union.a[ index ];
          }
 
-         basic_value& unsafe_at( const std::string& key ) noexcept
+         basic_value& unsafe_at( const string_t& key ) noexcept
          {
             return m_union.o.find( key )->second;
          }
 
-         const basic_value& unsafe_at( const std::string& key ) const noexcept
+         const basic_value& unsafe_at( const string_t& key ) const noexcept
          {
             return m_union.o.find( key )->second;
          }
@@ -554,7 +567,7 @@ namespace tao
             a.erase( a.begin() + index );
          }
 
-         void erase( const std::string& key )
+         void erase( const string_t& key )
          {
             TAOCPP_JSON_CHECK_TYPE_ERROR( m_type, json::type::OBJECT );
             if( m_union.o.erase( key ) == 0 ) {
@@ -621,7 +634,7 @@ namespace tao
          }
 
          template< typename T >
-         tao::optional< T > optional( const std::string& key ) const
+         tao::optional< T > optional( const string_t& key ) const
          {
             TAOCPP_JSON_CHECK_TYPE_ERROR( m_type, json::type::OBJECT );
             const auto it = m_union.o.find( key );
@@ -702,14 +715,14 @@ namespace tao
          template< typename... Ts >
          void unsafe_emplace_string( Ts&&... ts )
          {
-            new( &m_union.s ) std::string( std::forward< Ts >( ts )... );
+            new( &m_union.s ) string_t( std::forward< Ts >( ts )..., typename string_t::allocator_type( m_alloc ) );
             m_type = json::type::STRING;
          }
 
          template< typename... Ts >
          void unsafe_emplace_binary( Ts&&... ts )
          {
-            new( &m_union.x ) std::vector< byte >( std::forward< Ts >( ts )... );
+            new( &m_union.x ) binary_t( std::forward< Ts >( ts )..., typename binary_t::allocator_type( m_alloc ) );
             m_type = json::type::BINARY;
          }
 
@@ -730,7 +743,7 @@ namespace tao
          template< typename... Ts >
          void unsafe_emplace_array( Ts&&... ts )
          {
-            new( &m_union.a ) std::vector< basic_value >( std::forward< Ts >( ts )... );
+            new( &m_union.a ) array_t( std::forward< Ts >( ts )..., typename array_t::allocator_type( m_alloc ) );
             m_type = json::type::ARRAY;
          }
 
@@ -769,7 +782,7 @@ namespace tao
          template< typename... Ts >
          void unsafe_emplace_object( Ts&&... ts )
          {
-            new( &m_union.o ) std::map< std::string, basic_value >( std::forward< Ts >( ts )... );
+            new( &m_union.o ) object_t( std::forward< Ts >( ts )..., typename object_t::allocator_type( m_alloc ) );
             m_type = json::type::OBJECT;
          }
 
@@ -865,13 +878,13 @@ namespace tao
             return m_union.a[ index ];
          }
 
-         basic_value& operator[]( const std::string& key )
+         basic_value& operator[]( const string_t& key )
          {
             prepare_object();
             return m_union.o[ key ];
          }
 
-         basic_value& operator[]( std::string&& key )
+         basic_value& operator[]( string_t&& key )
          {
             prepare_object();
             return m_union.o[ std::move( key ) ];
@@ -1013,19 +1026,19 @@ namespace tao
                   assert( ( r.m_type = json::type::DISCARDED, true ) );
                   return;
                case json::type::STRING:
-                  new( &m_union.s ) std::string( std::move( r.m_union.s ) );
+                  new( &m_union.s ) string_t( std::move( r.m_union.s ) );
                   assert( ( r.discard(), true ) );
                   return;
                case json::type::BINARY:
-                  new( &m_union.x ) std::vector< byte >( std::move( r.m_union.x ) );
+                  new( &m_union.x ) binary_t( std::move( r.m_union.x ) );
                   assert( ( r.discard(), true ) );
                   return;
                case json::type::ARRAY:
-                  new( &m_union.a ) std::vector< basic_value >( std::move( r.m_union.a ) );
+                  new( &m_union.a ) array_t( std::move( r.m_union.a ) );
                   assert( ( r.discard(), true ) );
                   return;
                case json::type::OBJECT:
-                  new( &m_union.o ) std::map< std::string, basic_value >( std::move( r.m_union.o ) );
+                  new( &m_union.o ) object_t( std::move( r.m_union.o ) );
                   assert( ( r.discard(), true ) );
                   return;
                case json::type::RAW_PTR:
@@ -1058,16 +1071,16 @@ namespace tao
                   m_union.d = r.m_union.d;
                   return;
                case json::type::STRING:
-                  new( &m_union.s ) std::string( r.m_union.s );
+                  new( &m_union.s ) string_t( r.m_union.s );
                   return;
                case json::type::BINARY:
-                  new( &m_union.x ) std::vector< byte >( r.m_union.x );
+                  new( &m_union.x ) binary_t( r.m_union.x );
                   return;
                case json::type::ARRAY:
-                  new( &m_union.a ) std::vector< basic_value >( r.m_union.a );
+                  new( &m_union.a ) array_t( r.m_union.a );
                   return;
                case json::type::OBJECT:
-                  new( &m_union.o ) std::map< std::string, basic_value >( r.m_union.o );
+                  new( &m_union.o ) object_t( r.m_union.o );
                   return;
                case json::type::RAW_PTR:
                   m_union.p = r.m_union.p;
@@ -1077,7 +1090,8 @@ namespace tao
          }
 
          json::type m_type = json::type::UNINITIALIZED;
-         internal::value_union< basic_value > m_union;
+         Allocator< void > m_alloc;
+         union_t m_union;
       };
 
       template< template< typename... > class Traits >
@@ -1265,7 +1279,7 @@ namespace tao
       }
 
       template< template< typename... > class Traits >
-      basic_value< Traits >& operator-=( basic_value< Traits >& v, std::initializer_list< std::string > l )
+      basic_value< Traits >& operator-=( basic_value< Traits >& v, std::initializer_list< typename basic_value< Traits >::string_t > l )
       {
          auto& o = v.get_object();
          for( const auto& k : l ) {
