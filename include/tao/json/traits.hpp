@@ -29,8 +29,6 @@ namespace tao
       template< typename T, typename = void >
       struct traits
       {
-         static_assert( sizeof( T ) == 0, "no traits specialization found" );
-
          template< typename V, typename U >
          static void assign( V&, U&& );
       };
